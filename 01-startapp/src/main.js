@@ -2,7 +2,7 @@
  * @Author: liuhp 2190098961@qq.com
  * @Date: 2025-02-12 10:58:47
  * @LastEditors: liuhp 2190098961@qq.com
- * @LastEditTime: 2025-02-24 14:54:46
+ * @LastEditTime: 2025-02-27 16:44:32
  * @FilePath: \3d-study\01-startapp\src\main.js
  * @Description: 这是默认设置,请设置`customMade`, 打开koroFileHeader查看配置 进行设置: https://github.com/OBKoro1/koro1FileHeader/wiki/%E9%85%8D%E7%BD%AE
  */
@@ -11,6 +11,15 @@ import * as THREE from 'three'
 // 导入轨道控制器
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js'
+// // 导入hdr加载器
+// import { RGBLoader } from 'three/examples/jsm/loaders/RGBELoader.js'
+// 导入gltf加载器
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+// 导入draco解码器
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { smootherstep } from 'three/src/math/MathUtils'
+// 导入tween补间动画
+import * as TWEEN from 'three/examples/jsm/libs/tween.module.js'
 
 
 // 创建场景
@@ -29,81 +38,8 @@ const renderer = new THREE.WebGLRenderer()
 renderer.setSize(window.innerWidth, window.innerHeight)
 document.body.appendChild(renderer.domElement)
 
-
-
-// // 创建几何体
-const geometry = new THREE.BoxGeometry(1, 1, 1)
-// // 创建材质
-// const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 })
-// const parentMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 })
-// // 设置父元素材质为线框模式
-// parentMaterial.wireframe = true
-// // 创建网格
-// let parentCube = new THREE.Mesh(geometry, parentMaterial)
-// const cube = new THREE.Mesh(geometry, material)
-// parentCube.add(cube)
-// parentCube.position.set(-3, 0, 0)
-// parentCube.rotation.x = Math.PI / 4 // 父元素旋转，子元素跟随旋转
-// // parentCube.scale.set(2, 2, 2) // 父元素缩放后，子元素会跟随同样缩放
-// // cube.position.x = 2
-// cube.position.set(3, 0, 0)
-
-// cube.rotation.x = Math.PI / 4 // 跟随父元素旋转完，继续旋转
-// // cube.scale.set(2, 2, 2) // 在父元素缩放的基础上，子元素再缩放2倍
-
-
-// // 将网格添加到场景中
-// scene.add(parentCube)  // 父元素为原点，位移和缩放和子元素绑定
-
-// 创建几何体
-// const geometry = new THREE.BufferGeometry()
-// 创建顶点数据,顶点是有序的，每三个为一个顶点，逆时针为正面
-// const vertices = new Float32Array([
-//   -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0,
-//   1.0, 1.0, 0.0, -1.0, 1.0, 0.0, -1.0, -1.0, 0.0,
-// ])
-// /使用索引绘制
-// const vertices = new Float32Array([
-//   -1.0, -1.0, 0.0, 1.0, -1.0, 0.0, 1.0, 1.0, 0.0, -1.0, 1.0, 0.0
-// ])
-// // 创建顶点属性
-// geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-// // 创建索引
-// const indices = new Uint16Array([0, 1, 2, 2, 3, 0])
-// // 创建索引属性
-// geometry.setIndex(new THREE.BufferAttribute(indices, 1))
-
-
-// // // 设置2个顶点组，形成2个材质,（从索引第几个开始，几个顶点，使用第几个材质）
-// geometry.addGroup(0, 3, 0)
-// geometry.addGroup(3, 3, 1)
-
-// 创建材质
-const cubematerial0 = new THREE.MeshBasicMaterial({
-  color: 0x00ff00,
-
-})
-const cubematerial1 = new THREE.MeshBasicMaterial({
-  color: 0xff0000
-})
-const cubematerial2 = new THREE.MeshBasicMaterial({
-  color: 0x0000ff
-})
-const cubematerial3 = new THREE.MeshBasicMaterial({
-  color: 0xffff00
-})
-const cubematerial4 = new THREE.MeshBasicMaterial({
-  color: 0x00ffff
-})
-const cubematerial5 = new THREE.MeshBasicMaterial({
-  color: 0xff00ff
-})
-const cube = new THREE.Mesh(geometry, [cubematerial0, cubematerial1, cubematerial2, cubematerial3, cubematerial4, cubematerial5])
-cube.position.x = 2
-scene.add(cube)
-
 // 设置相机位置
-camera.position.z = 5
+camera.position.z = 15
 camera.position.y = 2
 camera.position.x = 2
 camera.lookAt(0, 0, 0)
@@ -118,38 +54,86 @@ controls.enableDamping = true
 // 设置阻尼系数
 controls.dampingFactor = 0.05
 // 设置旋转速度
-controls.autoRotate = true
+// controls.autoRotate = true
 
 
 
 // 渲染函数
 function animate() {
+  controls.update()
   requestAnimationFrame(animate)
   // 旋转
   // cube.rotation.x += 0.01
   // cube.rotation.y += 0.01
   // 渲染
   renderer.render(scene, camera)
+  TWEEN.update()
 }
 
 animate()
 
-let eventObj = {
-  Fullscreen: function () {
-    // 全屏
-    document.body.requestFullscreen()
-    console.log('全屏')
-  },
-  ExitFullscreen: function () {
-    // 退出全屏
-    document.exitFullscreen()
-    console.log('退出全屏')
-  }
-}
+// 监听窗口变化
+window.addEventListener('resize', () => {
+  // 重置渲染器宽高比
+  renderer.setSize(window.innerWidth, window.innerHeight)
+  // 重置相机宽高比
+  camera.aspect = window.innerWidth / window.innerHeight
+  // 更新相机投影矩阵
+  camera.updateProjectionMatrix()
+})
+
 // 创建GUI
 const gui = new GUI()
-// 添加按钮
-gui.add(eventObj, 'Fullscreen').name('全屏')
-gui.add(eventObj, 'ExitFullscreen').name('退出全屏')
+// 创建1个球
+const sphere1 = new THREE.Mesh(
+  new THREE.SphereGeometry(1, 32, 32),
+  new THREE.MeshBasicMaterial({
+    color: 0xff00ff,
+  })
+)
+sphere1.position.x = -4
+scene.add(sphere1)
 
+const tween = new TWEEN.Tween(sphere1.position)
+tween.to({ x: 4 }, 1000)
+tween.onUpdate(() => {
+  console.log(sphere1.position.x)
+})
+// 设置循环次数
+// tween.repeat(Infinity)
+tween.repeat(2)
+// 循环往复
+tween.yoyo(true)
+// tween.delay(3000)
+// 设置动画函数
+tween.easing(TWEEN.Easing.Quadratic.InOut)
+
+let tween2 = new TWEEN.Tween(sphere1.position)
+tween2.to({ x: -4 }, 1000)
+
+tween.chain(tween2)
+tween2.chain(tween)
+
+// 启动补间动画
+tween.start()
+tween.onStart(() => {
+  console.log('开始')
+})
+tween.onComplete(() => {
+  console.log('结束')
+})
+tween.onStop(() => {
+  console.log('停止')
+})
+
+ween.onUpdate(() => {
+  console.log('更新')
+})
+
+let params = {
+  stop: function () {
+    tween.stop()
+  }
+}
+gui.add(params, "stop")
 
